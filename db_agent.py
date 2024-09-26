@@ -57,7 +57,7 @@ class Agent():
                 return True
             except:
                 try:
-                    self.__cursor.execute(f'CREATE TABLE {channel} (username VARCHAR(255) NOT NULL, creationDate DATETIME NOT NULL, lastModified DATETIME NOT NULL, cookies INT, hat VARCHAR(255), lastRoll INT, lastRolledDice VARCHAR(255), PRIMARY KEY (username));')
+                    self.__cursor.execute(f'CREATE TABLE {channel} (id INT NOT NULL, username VARCHAR(255) NOT NULL, creationDate DATETIME NOT NULL, lastModified DATETIME NOT NULL, cookiesRewardTime DATETIME, cookies INT, hat VARCHAR(255), lastRoll INT, lastRolledDice VARCHAR(255), PRIMARY KEY (id));')
                     self.__cnx.commit()
                     return True
                 except:
@@ -67,26 +67,26 @@ class Agent():
             print('No database is connected.')
     # end _verifyChannel
 
-    def _checkUserExistence(self, channel:str, user:str):
+    def _checkUserExistence(self, channel:str, id:int, user:str):
         if self.__cnx.is_connected():
-            self.__cursor.execute(f'SELECT username, COUNT(DISTINCT username) FROM {channel} WHERE username = "{user}";')
+            self.__cursor.execute(f'SELECT username, COUNT(DISTINCT username) FROM {channel} WHERE id = {id};')
             result = self.__cursor.fetchone()
             if result['username'] != None:
                 return True
             else:   
-                self.__cursor.execute(f'INSERT INTO {channel} (username, creationDate, lastModified, cookies, hat) VALUES ("{user}", NOW(), NOW(), 100, "a nerd hat");')
+                self.__cursor.execute(f'INSERT INTO {channel} (id, username) VALUES ({id}, "{user}");')
                 self.__cnx.commit()
                 return True
         else:
             return False
     # end _checkUserExistence
 
-    def updateDB(self, channel:str, user:str, attribute:str, rowData:str):
+    def updateDB(self, channel:str, id:int, user:str, attribute:str, rowData:str):
         if self._verifyChannel(channel):
-            if self._checkUserExistence(channel, user):
-                self.__cursor.execute(f'UPDATE {channel} SET lastModified = NOW(), {attribute} = "{rowData}" WHERE username = "{user}";')
+            if self._checkUserExistence(channel, id, user):
+                self.__cursor.execute(f'UPDATE {channel} SET lastModified = NOW(), {attribute} = "{rowData}" WHERE id = {id};')
                 self.__cnx.commit()
-                self.__cursor.execute(f'SELECT {attribute} FROM {channel} WHERE username = "{user}";')
+                self.__cursor.execute(f'SELECT {attribute} FROM {channel} WHERE id = {id};')
                 return self.__cursor.fetchone()
             else:
                 return False
@@ -94,12 +94,12 @@ class Agent():
             return False
     # end updateDB
 
-    def incrementDB(self, channel:str, user:str, attribute:str, rowData:int):
+    def incrementDB(self, channel:str, id:int, user:str, attribute:str, rowData:int):
         if self._verifyChannel(channel):
-            if self._checkUserExistence(channel, user):
-                self.__cursor.execute(f'UPDATE {channel} SET lastModified = NOW(), {attribute} = {attribute}+{rowData} WHERE username = "{user}";')
+            if self._checkUserExistence(channel, id, user):
+                self.__cursor.execute(f'UPDATE {channel} SET lastModified = NOW(), {attribute} = {attribute}+{rowData} WHERE id = {id};')
                 self.__cnx.commit()
-                self.__cursor.execute(f'SELECT username, {attribute} FROM {channel} WHERE username = "{user}";')
+                self.__cursor.execute(f'SELECT username, {attribute} FROM {channel} WHERE id = {id};')
                 return self.__cursor.fetchone()[attribute]
             else:
                 return False
@@ -107,10 +107,10 @@ class Agent():
             return False
     # end incrementDB
 
-    def queryDB(self, channel:str, user:str, attribute:str):
+    def queryDB(self, channel:str, id:int, user:str, attribute:str):
         if self._verifyChannel(channel):
-            if self._checkUserExistence(channel, user):
-                self.__cursor.execute(f'SELECT username, {attribute} FROM {channel} WHERE username = "{user}";')
+            if self._checkUserExistence(channel, id, user):
+                self.__cursor.execute(f'SELECT username, {attribute} FROM {channel} WHERE id = "{id}";')
                 result = self.__cursor.fetchone()
                 return result
             else:
