@@ -1,3 +1,8 @@
+# No Passwords, Tokens, or other personal data should ever be uploaded
+keys/
+data/
+logs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
