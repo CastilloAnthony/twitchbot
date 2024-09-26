@@ -10,15 +10,15 @@ QuickStart:
 2. Install requirements.txt
 3. Launch \_\_main\_\_.py
 4. Fill out the newly created files in the keys directory (token.txt, password.txt and, channels.txt):
-    ./keys/token.txt
-        - Should contain the access token for the bot. Tokens can be generated at this link: https://twitchtokengenerator.com/
-    ./keys/password.txt
-        - Should contain the password for the MySQL database access for the twitchbot username
-    ./keys/channels.txt
-        - Should contain the names of channels (one per line) that the bot should be operating in
+    - ./keys/token.txt
+        - - Should contain the access token for the bot. Tokens can be generated at this link: https://twitchtokengenerator.com/
+    - ./keys/password.txt
+        - - Should contain the password for the MySQL database access for the twitchbot username
+    - ./keys/channels.txt
+        - - Should contain the names of channels (one per line) that the bot should be operating in
 5. Relaunch \_\_main\_\_.py
 6. You should now be able to interact with the bot in chat channels. Try the '!help' command.
 
 Additional Files:
-    ./data/who.txt
+    - ./data/who.txt
         - Can be blank, but should otherwise have the usernames of the people the streamer is streaming with. Can be updated without restarting the bot.
