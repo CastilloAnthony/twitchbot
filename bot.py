@@ -6,7 +6,7 @@ import time
 
 import twitchio
 from twitchio.ext import commands
-import requests
+# import requests
 
 from db_agent import Agent
 from dice import Dice
@@ -36,7 +36,7 @@ class Bot(commands.Bot):
         self.__secretDiceBag = [Dice(4), Dice(6), Dice(8), Dice(10), Dice(12), Dice(20),]
         self.__command_names = []
         for cmd in self.commands:
-            if cmd not in ['shoutout', 'rollHistory']: # Removing commands needing special privlages 
+            if cmd not in ['shoutout', 'rollHistory', 'addQuote']: # Removing commands needing special privlages 
                 self.__command_names.append(cmd)
     # end __init__
 
@@ -166,8 +166,8 @@ class Bot(commands.Bot):
     # end event_message
 
     ###         COMMANDS         ###
-    @commands.command()
-    async def hello(self, ctx: commands.Context) -> None:
+    @commands.command(name="hello")
+    async def hello_command(self, ctx: commands.Context) -> None:
         await ctx.send(f'Hello there {ctx.author.name}!')
     # end hello
 
@@ -176,13 +176,21 @@ class Bot(commands.Bot):
         await ctx.send(f'Awooooooo!')
     # end howl_command
 
-    @commands.command()
-    async def help(self, ctx: commands.Context) -> None:
-        await ctx.send(f'The following commands can be used: {', '.join(self.__command_names)}')
+    @commands.command(name="help")
+    async def help_command(self, ctx: commands.Context, commandName:str | None) -> None:
+        if commandName != None:
+            if commandName in self.commands:
+                # print(self.commands[commandName].__doc__)
+                print(exec("self."+commandName+"_command.__doc__"))
+                # print(self.commands)
+                # print(self.commands['shoutout'].name, self.commands['shoutout'].cog, self.commands['shoutout'].aliases, )
+                # await ctx.send(f'Usage of {commandName}: {exec("self."+commandName+"_command.__doc__")}')
+        else:
+            await ctx.send(f'The following commands can be used: {', '.join(self.__command_names)}')
     # end help
 
-    @commands.command()
-    async def uptime(self, ctx: commands.Context) -> None:
+    @commands.command(name="uptime")
+    async def uptime_command(self, ctx: commands.Context) -> None:
         streamer = await self._verifyUser(ctx.channel.name)
         if streamer != None:
             streams = await self.fetch_streams(user_ids=[streamer.id])
@@ -194,6 +202,7 @@ class Bot(commands.Bot):
 
     @commands.command(name="shoutout", aliases=("so",))
     async def shoutout_command(self, ctx: commands.Context, targetUser:str) -> None:
+        """testing does this work? hello? !shoutout targetUser"""
         # moderators = [] # Should see if the author is in a list of moderators
         if ctx.author.name == ctx.channel.name:
             exists = await self.fetch_channel(targetUser)#search_channel(user)
@@ -247,7 +256,8 @@ class Bot(commands.Bot):
             if user1 != None:
                 resultTime = self.__agent.queryDB(ctx.channel.name, user1.id, user1.name, 'cookiesRewardTime')
                 if datetime.datetime.now() > resultTime['cookiesRewardTime'] + datetime.timedelta(days=1):
-                    amount = self.__secretDiceBag[5].roll()
+                    result = self.__agent.queryDB(ctx.channel.name, user1.id, user1.name, 'cookies')
+                    amount = int(self.__secretDiceBag[5].roll()*(100/result['cookies'])) # Give more to them if they have less, and give less to them if they have more
                     self.__agent.incrementDB(ctx.channel.name, user1.id, user1.name, 'cookies', amount)
                     result = self.__agent.queryDB(ctx.channel.name, user1.id, user1.name, 'cookies')
                     if amount != 1:
@@ -266,8 +276,8 @@ class Bot(commands.Bot):
                 await ctx.send(f'@{user2.name} has {result['cookies']} cookies.')
     # end cookie_command
 
-    @commands.command(name='give')
-    async def give_cookies(self, ctx: commands.Context, amount:int, targetUser:str | None) -> None:
+    @commands.command(name='giveCookies')
+    async def giveCookies_command(self, ctx: commands.Context, amount:int, targetUser:str | None) -> None:
         if targetUser != None:
             if targetUser[0] == '@':
                 targetUser = targetUser[1:]
@@ -293,8 +303,8 @@ class Bot(commands.Bot):
                         await ctx.send(f'{ctx.author.name} gave 1 cookie to @{user2.name}.')
     # end give_cookies
 
-    @commands.command(name="steal")
-    async def steal_cookies(self, ctx: commands.Context, targetUser:str | None) -> None:
+    @commands.command(name="stealCookies")
+    async def stealCookies_command(self, ctx: commands.Context, targetUser:str | None) -> None: # Needs timing
         if targetUser != None:
             if targetUser[0] == '@':
                 targetUser = targetUser[1:]
@@ -303,21 +313,29 @@ class Bot(commands.Bot):
             if user1 != None and user2 != None:
                 result = self.__agent.queryDB(ctx.channel.name, user2.id, user2.name, 'cookies')
                 if result['cookies'] > 0:
-                    # attack = self.roll(ctx, 'd20')
-                    stealQuantity = random.randint(1, int(result['cookies']*0.1))
-                    self.__agent.incrementDB(ctx.channel.name, user2.id, user2.name, 'cookies', -stealQuantity)
-                    self.__agent.incrementDB(ctx.channel.name, user1.id, user1.name, 'cookies', stealQuantity)
-                    result = self.__agent.queryDB(ctx.channel.name, user1.id, user1.name, 'cookies')
-                    if stealQuantity == 1:
-                        await ctx.send(f'{ctx.author.name} stole {stealQuantity} cookie from @{user1.name}!')
+                    result2 = self.__agent.queryDB(ctx.channel.name, user1.id, user1.name, 'cookies')
+                    attacker = self.__secretDiceBag[5].roll()*(100/result2['cookies'])
+                    defender = self.__secretDiceBag[5].roll()*(100/result['cookies'])
+                    if attacker > defender:
+                        stealQuantity = int((result['cookies']*.5)*(self.__secretDiceBag[5].roll()*5)*(100/result2['cookies']))#+random.randint(1, int(result['cookies']*0.1))
+                        if stealQuantity > 0:
+                            self.__agent.incrementDB(ctx.channel.name, user2.id, user2.name, 'cookies', -stealQuantity)
+                            self.__agent.incrementDB(ctx.channel.name, user1.id, user1.name, 'cookies', stealQuantity)
+                            result = self.__agent.queryDB(ctx.channel.name, user1.id, user1.name, 'cookies')
+                            if stealQuantity == 1:
+                                await ctx.send(f'@{ctx.author.name} stole {stealQuantity} cookie from @{user1.name}!')
+                            else:
+                                await ctx.send(f'@{ctx.author.name} stole {stealQuantity} cookies from @{user1.name}!')
+                        else:
+                            await ctx.send(f'@{ctx.author.name} failed to steal cookies from @{user1.name}!')
                     else:
-                        await ctx.send(f'{ctx.author.name} stole {stealQuantity} cookies from @{user1.name}!')
+                        await ctx.send(f'@{ctx.author.name} failed to steal cookies from @{user1.name}!')
                 else:
                     await ctx.send(f'@{user1.name} has no cookies to steal.')
     # end steal_cookies
 
     @commands.command(name='roll')
-    async def roll(self, ctx:commands.Context, dice:str) -> None:
+    async def roll_command(self, ctx:commands.Context, dice:str) -> None:
         user = await self._verifyUser(ctx.author.name)
         if user != None:
             for key, value in enumerate(['d4', 'd6', 'd8', 'd10', 'd12', 'd20']):
@@ -330,7 +348,7 @@ class Bot(commands.Bot):
     # end roll
 
     @commands.command(name='lastRoll')
-    async def lastRoll(self, ctx:commands.Context) -> None:
+    async def lastRoll_command(self, ctx:commands.Context) -> None:
         user = await self._verifyUser(ctx.author.name)
         if user != None:
             roll = self.__agent.queryDB(ctx.channel.name, user.id, user.name, 'lastRoll')
@@ -339,7 +357,7 @@ class Bot(commands.Bot):
     # end lastRoll
 
     @commands.command(name='rollHistory')
-    async def rollHistory(self, ctx:commands.Context, dice:str) -> None:
+    async def rollHistory_command(self, ctx:commands.Context, dice:str) -> None:
         if ctx.author.name == ctx.channel.name:
             for key, value in enumerate(['d4', 'd6', 'd8', 'd10', 'd12', 'd20']):
                 if dice == value:
@@ -347,4 +365,37 @@ class Bot(commands.Bot):
                     await ctx.send(f'{dice} hisotry: {', '.join(history)}.')
                     break
     # end rollHistory
+
+    @commands.command(name='addQuote')
+    async def addQuote_command(self, ctx:commands.Context, *args) -> None:
+        # moderators = []
+        quote = ' '.join(args)
+        if ctx.author.name == ctx.channel.name:
+            if self.__agent.addQuote(ctx.channel.name, quote):
+                self._printLog(f'New quote added by {ctx.author.name}: "{quote}"')
+    # end add_quote
+
+    @commands.command(name='quote')
+    async def quote_command(self, ctx:commands.Context, number:int | None) -> None: # Might be off by 1, double check later
+        # quotes = ['Beep Boop, no quotes found.',]
+        if number != None:
+            if number > 0:
+                if number < self.__agent.getQuoteCount(ctx.channel.name):
+                    result = self.__agent.getQuote(ctx.channel.name, number)
+                    if result != False:
+                        await ctx.send(f'Quote #{number}: "{result['quote']}"')
+                    else:
+                        await ctx.send(f'Beep Boop, Quote #{number} was not found.')
+        else:
+            count = self.__agent.getQuoteCount(ctx.channel.name)
+            if count == 1:
+                result = self.__agent.getQuote(ctx.channel.name, 1)
+                await ctx.send(f'Quote #{1}: "{result['quote']}"')
+            elif count > 1:
+                pick = random.randint(1, count)
+                result = self.__agent.getQuote(ctx.channel.name, pick)
+                await ctx.send(f'Quote #{pick}: "{result['quote']}"')
+            else:
+                await ctx.send(f'Beep Boop, no quotes were found.')
+    # end quote_command
 # end Bot
