@@ -1,3 +1,4 @@
+# Developed by Anthony Castillo, October 1st, 2024
 import mysql
 import mysql.connector
 
@@ -33,6 +34,7 @@ class Agent():
                     #autocommit=True,
                 )
             self.__cursor = self.__cnx.cursor(buffered=True, dictionary=True)
+            self._createAdditionalDatabases()
         except mysql.connector.Error as err:
             if err.errno == mysql.errorcode.ER_ACCESS_DENIED_ERROR:
                 print("Access Denied, check your username and password")
@@ -43,12 +45,31 @@ class Agent():
         return self.__cnx.is_connected()
     # end connect
 
-    def _readPassword(self) -> str:
+    def _readPassword(self) -> str: # Reading passwords from a text file is ill-advised
         with open('./keys/password.txt', 'r') as file:
             for line in file.readlines():
                 if line != '' and len(line) > 0:
                     return line        
+        userInput = ''
+        while userInput == '':
+            userTemp = input('Database password for username twitchbot: ')
+            if len(userTemp) > 1:
+                userInput = userTemp
     # end _readToken
+
+    def _createAdditionalDatabases(self) -> None:
+        names = ['global_banlist', ]
+        for name in names:
+            if self.__cnx.is_connected():
+                try:
+                    self.__cursor.execute(f'SELECT COUNT(DISTINCT username) FROM {name}')
+                except:
+                    try:
+                        self.__cursor.execute(f'CREATE TABLE {name} (id INT NOT NULL, username VARCHAR(255) NOT NULL, initialOffense DATETIME DEFAULT NOW() NOT NULL, lastModified DATETIME DEFAULT NOW() NOT NULL, offenses TINYINT DEFAULT 1 NOT NULL, banned TINYINT DEFAULT 0 NOT NULL, PRIMARY KEY (id))')
+                        self.__cnx.commit()
+                    except:
+                        print('Could not create database for: ', name)
+    # end _createDatabases
 
     def _verifyChannel(self, channel:str) -> bool:
         if self.__cnx.is_connected():
@@ -152,4 +173,26 @@ class Agent():
             return result
         else:
             return False
+    # end getQuoteCount
+
+    def addBan(self, userId:int, username:str, maxOffense:int) -> int | None:
+        if self.__cnx.is_connected():
+            self.__cursor.execute(f'SELECT COUNT(DISTINCT id) FROM global_banlist WHERE id = {userId};')
+            result = self.__cursor.fetchone()
+            if result['COUNT(DISTINCT id)'] != 0:
+                self.__cursor.execute(f'UPDATE global_banlist SET lastModified = NOW(), offenses = offenses+{1} WHERE id = {userId};')
+                self.__cnx.commit()
+                self.__cursor.execute(f'SELECT offenses FROM global_banlist WHERE id = {userId};')
+                result = self.__cursor.fetchone()["offenses"]
+                if result >= maxOffense:
+                    self.__cursor.execute(f'UPDATE global_banlist SET lastModified = NOW(), banned = 1 WHERE id = {userId};')
+                    self.__cnx.commit()
+                return result
+            else:
+                self.__cursor.execute(f'INSERT INTO global_banlist (id, username) VALUES ({userId}, "{username}");')
+                self.__cnx.commit()
+                return 1
+        else:
+            return None
+    # end addBan
 # end Agent

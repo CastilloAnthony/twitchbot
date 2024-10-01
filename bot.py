@@ -1,15 +1,19 @@
+# Developed by Anthony Castillo, October 1st, 2024
 import random
 import datetime
 from pathlib import Path
 import logging
 import time
+import json
 
 import twitchio
 from twitchio.ext import commands
-# import requests
+import requests
 
 from db_agent import Agent
 from dice import Dice
+
+# Twitch Helix Endpoints: https://dev.twitch.tv/docs/api/reference/
 
 # https://twitchio.dev/en/stable/
 # https://twitchio.dev/en/stable/quickstart.html
@@ -29,6 +33,7 @@ class Bot(commands.Bot):
         if not self._checkFiles():
             self.__currTime = True
             return None
+        self.__settings = self._readSettings()
         super().__init__(token=self._readToken(), prefix='!', initial_channels=self._readChannel())
         self.__agent = Agent()
         self.__agent.connect()
@@ -36,7 +41,7 @@ class Bot(commands.Bot):
         self.__secretDiceBag = [Dice(4), Dice(6), Dice(8), Dice(10), Dice(12), Dice(20),]
         self.__command_names = []
         for cmd in self.commands:
-            if cmd not in ['shoutout', 'rollHistory', 'addQuote']: # Removing commands needing special privlages 
+            if cmd not in ['shoutout', 'rollHistory', 'addQuote', 'timeout']: # Removing commands needing special privlages 
                 self.__command_names.append(cmd)
     # end __init__
 
@@ -69,46 +74,59 @@ class Bot(commands.Bot):
         logging.info(currTime+' - '+text)
     # end _printLog
 
+    def _getAccessToken(self, client_id='gp762nuuoqcoxypju8c569th9wz7q5') -> str:
+        url = f'''https://id.twitch.tv/oauth2/authorize?response_type=token&client_id={client_id}&redirect_uri=	73.185.101.110:7777&scope='''
+        # scopes = [,]
+    # end _getAccessToken
+
     def _checkFiles(self) -> bool:
         status = []
-        if not Path('./keys').is_dir():
-            Path('./keys').mkdir()
-            self._printLog('./keys directory has been created.')
-        if not Path('./data').is_dir():
-            Path('./data').mkdir()
-            self._printLog('./data directory has been created.')
-        if not Path('./keys/token.txt').is_file():
-            with open('./keys/token.txt', 'w') as file:
-                file.write()
-            self._printLog('./token.txt has been created.')
-            self._printLog('Please fill out the newly created token file. \nTokens can be generated at this link: https://twitchtokengenerator.com/')
-            status.append(False)
-        else:
-            status.append(True)
-        if not Path('./keys/password.txt').is_file():
-            with open('./keys/password.txt', 'w') as file:
-                file.write()
-            self._printLog('./keys/password.txt has been created.')
-            self._printLog('Please fill out the newly created password file.')
-            status.append(False)
-        else:
-            status.append(True)
-        if not Path('./keys/channels.txt').is_file():
-            with open('./keys/channels.txt', 'w') as file:
-                file.write()
-            self._printLog('./keys/channels.txt has been created.')
-            status.append(False)
-        else:
-            status.append(True)
-        if not Path('./data/who.txt').is_file():
-            with open('./data/who.txt', 'w') as file:
-                file.write()
-            self._printLog('./data/who.txt has been created.')
+        dirs = ['data', 'keys']
+        keyFiles = ['token', 'channels', 'password']
+        dataFiles = ['who', 'bannedPhrases', 'settings']
+        for i in dirs:
+            if not Path('./'+i).is_dir():
+                Path('./'+i).mkdir()
+                self._printLog('./'+i+' directory has been created.')
+        for i in keyFiles:
+            if not Path('./keys/'+i+'.txt').is_file():
+                with open('./keys/'+i+'.txt', 'w') as file:
+                    file.write('')
+                self._printLog('./keys/'+i+'.txt has been created.')
+                status.append(False)
+            else:
+                status.append(True)
+        for i in dataFiles:
+            filetype = '.txt'
+            if i == 'settings':
+                filetype = '.ini'
+            if not Path('./data/'+i+filetype).is_file():
+                with open('./data/'+i+filetype, 'w') as file:
+                    file.write('')
+                self._printLog('./data/'+i+filetype+' has been created.')
         if False in status:
+            self._printLog('Please fill out the newly created files in the keys folder and/or the data folder. \nTokens can be generated at this link: https://twitchtokengenerator.com/')
             return False
         else:
             return True
     # end _checkDirs
+
+    def _readSettings(self) -> dict:
+        settingsHeader = ['autoMod', 'maxOffense', 'timeoutDuration', 'accessToken']
+        settings = {}
+        with open('./data/settings.ini', 'r') as file:
+            contents = file.read()
+            if contents != '':
+                settings = json.loads(contents)
+            for i in settingsHeader:
+                if i not in settings:
+                    settings = {'autoMod':True, 'maxOffense': 3, 'timeoutDuration': 60*5, 'accessToken':0}
+                    with open('./data/settings.ini', 'w') as file:
+                        file.write(json.dumps(settings))
+                    self._printLog(f'settings.ini was missing {i} and have been recreated.')
+                    break
+        return settings
+    # end _readSettings
 
     def _readToken(self) -> str:
         with open('./keys/token.txt', 'r') as file:
@@ -126,6 +144,15 @@ class Bot(commands.Bot):
         return channels
     # end _readChannel
 
+    def _readBannedPhrases(self) -> list[str]:
+        bannedPhrases = []
+        with open('./data/bannedPhrases.txt', 'r') as file:
+            for line in file.readlines():
+                if line != '' and len(line) > 0:
+                    bannedPhrases.append(line)
+        return bannedPhrases
+    # end _readBannedPhrases
+
     async def _verifyUser(self, user) -> twitchio.User | None:
         users = await self.fetch_users(names=[user])
         for i in users:
@@ -137,6 +164,44 @@ class Bot(commands.Bot):
     def start(self) -> None:
         self.run()
     # end start
+
+    async def _autoMod(self, ctx: twitchio.message) -> None: # Use Helix 
+        botDetection = ['Cheap viewrs on']
+        if self.__settings['autoMod']:
+            for i in botDetection:
+                if i in ctx.content:
+                    pass
+            for i in self._readBannedPhrases():
+                if i.lower() in ctx.content.lower():
+                    offenseCount = self.__agent.addBan(ctx.author.id, ctx.author.name, self.__settings['maxOffense'])
+                    if offenseCount != None:
+                        if offenseCount >= self.__settings['maxOffense']: # Ban
+                            # await ctx.channel.ban()
+                            self._printLog(f'Disciplinary actions have been taken against {ctx.author.name} for saying: {ctx.content}')
+                        elif (offenseCount == 1): # Warn them
+                            print('This is a warning --TEMP--')
+                        else: # Timeout
+                            await self.timeout_command(ctx, ctx.author.name, self.__settings['timeoutDuration'], offenseCount, i, ctx.content)
+                    else:
+                        self._printLog(f'There was an error adding a user to the global_banlist. User {ctx.author.name}')
+    # end _autoMod
+
+
+    @commands.command(name="timeout") # Use Helix 
+    async def timeout_command(self, ctx: twitchio.message, userId:int, user:str, duration:int, offenseCount:int, bannedPhrase:str, message:str):
+        if not ctx.author.is_mod:
+            data = {'data': {
+                'user_id':f"{userId}",
+                'duration':f"{duration}",
+                'reason':f'This is offense number {offenseCount}, if you reach {self.__settings['maxOffense']} offenses then you will be banned. Your message contained the banned phrase: {bannedPhrase}'}}
+            request = f'''https://api.twitch.tv/helix/moderation/bans?broadcaster_id=1234&moderator_id=5678
+                            -H Authorization: Bearer 4a4x78f5wqvkybms7mxfist3jmzul
+                            -H Client-Id: t214nt8z1rdtbj69hyarjvh5mi6fh
+                            -H Content-Type: application/json
+                            -d {json.dumps(data)}'''
+            await ctx.channel.timeout(user, duration, )
+            self._printLog(f'{user} has accumlated an offense and been timed out for {duration}. They are now at {offenseCount} offense(s). They used the banned phrase {message} and their message was: {message}')
+    # end timeout_command
 
     async def event_ready(self) -> None:
         self._printLog(f'Logged in as | {self.nick}')
@@ -151,8 +216,9 @@ class Bot(commands.Bot):
     #     print('Error: ', ctx.author.name, ': ', ctx.message.content, ' | ', error)
     # end event_command_error
 
-    async def event_message(self, ctx: commands.Context) -> None:
+    async def event_message(self, ctx: twitchio.message.Message) -> None:
         if type(ctx.author) != type(None):
+            await self._autoMod(ctx)
             user = await self._verifyUser(ctx.author.name)
             if user != None:
                 while not self.__agent._checkUserExistence(ctx.channel.name, user.id, user.name,):
@@ -200,11 +266,11 @@ class Bot(commands.Bot):
                     break
     # end uptime
 
-    @commands.command(name="shoutout", aliases=("so",))
+    @commands.command(name="shoutout", aliases=("so",)) # Use Helix 
     async def shoutout_command(self, ctx: commands.Context, targetUser:str) -> None:
         """testing does this work? hello? !shoutout targetUser"""
         # moderators = [] # Should see if the author is in a list of moderators
-        if ctx.author.name == ctx.channel.name:
+        if ctx.author.is_mod: # ctx.author.name == ctx.channel.name:
             exists = await self.fetch_channel(targetUser)#search_channel(user)
             if exists.user.name.lower() == targetUser.lower():
                 self._printLog(f'Shoutout given to {targetUser} by {ctx.author.name}')
@@ -358,7 +424,7 @@ class Bot(commands.Bot):
 
     @commands.command(name='rollHistory')
     async def rollHistory_command(self, ctx:commands.Context, dice:str) -> None:
-        if ctx.author.name == ctx.channel.name:
+        if ctx.author.is_mod:  # ctx.author.name == ctx.channel.name:
             for key, value in enumerate(['d4', 'd6', 'd8', 'd10', 'd12', 'd20']):
                 if dice == value:
                     history = [str(i) for i in self.__diceBag[key].history()]
@@ -370,7 +436,7 @@ class Bot(commands.Bot):
     async def addQuote_command(self, ctx:commands.Context, *args) -> None:
         # moderators = []
         quote = ' '.join(args)
-        if ctx.author.name == ctx.channel.name:
+        if ctx.author.is_mod: #ctx.author.name == ctx.channel.name:
             if self.__agent.addQuote(ctx.channel.name, quote):
                 self._printLog(f'New quote added by {ctx.author.name}: "{quote}"')
     # end add_quote
