@@ -1,0 +1,66 @@
+<!--Developed by Anthony Castillo-->
+<link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Root</title>
+        <meta charset="utf-8">
+        <script type="application/javascript">
+        window.onload = function()
+        {
+            console.log(Math.sin(Math.PI/4) + 12 * 3/4);
+        };
+        </script>
+    </head>
+    <body>
+        <header>
+            <div class="title">
+                WolfBot API Access
+            </div>
+        </header>
+        <main>
+            <div>
+                <p>Paths</p>
+                <ul>
+                    <li class="top">
+                        /bot/status
+                        <ul>
+                            <li>- Returns boolean value.</li>
+                            <li>- True/False</li>
+                        </ul>
+                    </li>
+                    <li class="top">
+                        /bot/channels
+                        <ul>
+                            <li>- Returns a list of channels the bot is currently connected to.</li>
+                            <li>- List[str,]</li>
+                        </ul> 
+                    </li>
+                    <li class="top">
+                        /bot/commands
+                        <ul>
+                            <li>- Returns a list of commands.</li>
+                            <li>- TBD</li>
+                        </ul> 
+                    </li>
+                    <li class="top">
+                        /bot/settings
+                        <ul>
+                            <li>- Returns a dictionary of values that the bot is set to.</li>
+                            <li>- Dict{key: value}</li>
+                        </ul>
+                    </li>
+                    <li class="top">
+                        /bot/bannedUsers
+                        <ul>
+                            <li>- Returns a list of users that have been bannedUsers.</li>
+                            <li>- List[str,]</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </main>
+        <footer>
+        </footer>
+    </body>
+</html>

@@ -1,7 +1,12 @@
 # No Passwords, Tokens, or other personal data should ever be uploaded
-keys/
-data/
-logs/
+old/keys/
+old/data/
+old/logs/
+client_settings.json
+.tio.tokens.json
+tokens.db
+tokens.db-shm
+tokens.db-wal
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

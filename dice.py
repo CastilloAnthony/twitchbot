@@ -1,16 +1,13 @@
 import random
 
 class Dice():
-    def __init__(self, face:int):
-        if face in [4, 6, 8, 10, 12, 20]:
-            self.__face = face
+    def __init__(self, face:int = 20):
+        if face not in [4, 6, 8, 10, 12, 20]:
+            raise ValueError(f'Parameter "face" must be one of 4, 6, 8, 10, 12, 20')
+        self.__face = face
         self.__lastRoll = 0
         self.__history = []
     # end __init__
-
-    def __del__(self):
-        del self.__face, self.__lastRoll
-    # end __del__
 
     def __str__(self):
         return 'd'+str(self.__face)+': '+str(self.__lastRoll)

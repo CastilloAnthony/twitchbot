@@ -1,0 +1,61 @@
+<!--Developed by Anthony Castillo-->
+<link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Root</title>
+        <meta charset="utf-8">
+        <script type="application/javascript">
+        window.onload = function()
+        {
+            console.log(Math.sin(Math.PI/4) + 12 * 3/4);
+        };
+        </script>
+    </head>
+    <body>
+        <header>
+            <div class="title">
+                WolfBot Control Panel
+            </div>
+            
+            <ul class="navbar">
+                <li class="dropdown"><a class="navbar-link" href="/">Home</a></li>
+
+                <li class="dropdown">
+                    <a class="navbar-link" href="#">User</a>
+                    <div class="dropdown-content">
+                        <a href="/user/profile">Profile</a>
+                        <a href="/user/login">Login</a>
+                        <a href="/user/register">Register</a>
+                    </div>
+                </li>
+
+                <li class="dropdown">
+                    <a class="navbar-link" href="#">Bot</a>
+                    <div class="dropdown-content">
+                        <a href="/bot/status">Bot Status</a>
+                        <a href="/bot/channels">Channels</a>
+                        <a href="/bot/settings">Settings</a>
+                        <a href="/bot/commands">Commands</a>
+                    </div>
+                </li>
+                <li class="dropdown"><a class="navbar-link" href="/about">About</a></li>
+            </ul>
+        </header>
+        <main>
+            {% block content %}
+            {% endblock %}
+        </main>
+        <footer>
+            <ul class="footer-bar">
+                
+                <li class="footer-content">
+                    Test
+                </li>
+                <li class="footer-content">
+                    Test
+                </li>
+            </ul>
+        </footer>
+    </body>
+</html>

@@ -5,6 +5,7 @@ from pathlib import Path
 import logging
 import time
 import json
+import sys
 
 import twitchio
 from twitchio.ext import commands
@@ -14,6 +15,7 @@ from db_agent import Agent
 from dice import Dice
 
 # Twitch Helix Endpoints: https://dev.twitch.tv/docs/api/reference/
+# https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow
 
 # https://twitchio.dev/en/stable/
 # https://twitchio.dev/en/stable/quickstart.html
@@ -164,6 +166,16 @@ class Bot(commands.Bot):
     def start(self) -> None:
         self.run()
     # end start
+
+    def getSettings(self) -> dict:
+        self.__settings = self._readSettings() # Read Settings into bot then 
+        return self.__settings
+    # end getSettings
+
+    async def stop(self) -> None:
+        print('Closing twitchbot')
+        sys.exit()
+    # end close
 
     async def _autoMod(self, ctx: twitchio.message) -> None: # Use Helix 
         botDetection = ['Cheap viewrs on']
