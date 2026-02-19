@@ -20,8 +20,8 @@ LOGGER: logging.Logger = logging.getLogger("Bot")
 
 from readClientSettings import readClientSettings
 import CommandsCore
-import CommandsPZ
 import CommandsMath
+import CommandsPZ
 
 class ComradeWolf_Bot(commands.AutoBot):
     def __init__(self, *, token_database: asqlite.Pool, subs: list[
@@ -52,16 +52,17 @@ class ComradeWolf_Bot(commands.AutoBot):
         self.__components.append(CommandsPZ.CommandsPZ(self))
         for i in self.__components:
             await self.add_component(i)
-            LOGGER.info(f'{i.name} has been loaded.')
+        #     LOGGER.info(f'{i.name} has been loaded.')
     # end setup_hook
 
     async def reloadComponents(self,) -> None:
         for i in self.__components:
             await self.remove_component(i.name)
-            LOGGER.info(f'{i.name} has been unloaded.')
+            # LOGGER.info(f'{i.name} has been unloaded.')
         for i in self.__componentModules:
             reload(i)
         await self.setup_hook()
+        LOGGER.info(f'{', '.join(component.name for component in self.__components)} have been reloaded.')
     # end reloadComponents
 
     async def event_oauth_authorized(self, payload: twitchio.authentication.UserTokenPayload) -> None:

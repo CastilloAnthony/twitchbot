@@ -16,30 +16,48 @@ class CommandsPZ(commands.Component):
         # LOGGER.info(f'{self.name} component loaded.')
     # end __init__
 
-    @commands.command()
+    @commands.group(invoke_fallback=True)
+    async def pz(self, ctx: commands.Context) -> None:
+        """Command to invite a chatter to use pz stuff.
+
+        !pz
+        """
+        await ctx.reply(f'We are currently playing Project Zomboid for useful commands try (!pz help)')
+    # end math
+
+    @pz.command()
+    async def help(self, ctx: commands.Context) -> None:
+        """Command that replies with a link to an online project zomboid map.
+
+        !pz help
+        """
+        await ctx.reply(f'Try one of these: !pz < {' | '.join(self.pz.commands.keys())} >')
+    # end map
+
+    @pz.command()
     async def map(self, ctx: commands.Context) -> None:
         """Command that replies with a link to an online project zomboid map.
 
-        !map
+        !pz map
         """
         await ctx.reply(f'Here is a link to the B42 map: {self.__map}')
     # end map
 
-    @commands.command()
+    @pz.command()
     async def mods(self, ctx: commands.Context) -> None:
         """Command that replies with a link to the mod collection we're using on steam.
 
-        !mods
+        !pz mods
         """
         await ctx.reply(f'Here is a link to the modpack we are using: {self.__modpack}')
     # end mods
 
-    @commands.command()
+    @pz.command()
     async def server(self, ctx: commands.Context) -> None:
         """Command that replies with information on the server.
 
-        !server
+        !pz server
         """
-        await ctx.reply(f'We are currently plaing on a server hosted and managed by @Pedguin.')
+        await ctx.reply(f'We are currently playing on a server hosted and managed by @Pedguin. Head on over to his channel for additional information.')
     # end mods
 # end PZCommandComponent

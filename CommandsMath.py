@@ -23,7 +23,7 @@ class CommandsMath(commands.Component):
 
         !math help
         """
-        await ctx.reply(f"Try one of these: !math add 7 7 | !math subtract 7 7 | !math multiply 7 7 | !math divide 7 7> ")
+        await ctx.reply(f"Try one of these: !math < {' | '.join(self.math.commands.keys())} > i.e.: !math * 7 7")
     # end add
 
     @math.command(aliases=['+'])

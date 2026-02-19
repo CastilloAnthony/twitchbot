@@ -73,8 +73,8 @@ class CommandsCore(commands.Component):
 
     @commands.command(name='help')
     async def help(self, ctx: commands.Context) -> None:
-        print(f'Here is a list of all available commands: {', '.join(self.__bot.commands)}')
-        await ctx.reply(f'Here is a list of all available commands: {', '.join(self.__bot.commands)}')
+        # print(f'Here is a list of all available commands: {', '.join(self.__bot.commands)}')
+        await ctx.reply(f'Here is a list of all available commands: {' | '.join(self.__bot.commands)}')
     # end help
 
     @commands.group(invoke_fallback=True)
